@@ -168,7 +168,9 @@ def get_tables():
 
 if __name__ == "__main__":
     init_db()
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    # This says: Use the PORT provided by the environment, or default to 5000 for local testing
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
     @app.route("/")
 def index():
     return {
