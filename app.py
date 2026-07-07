@@ -8,6 +8,13 @@ from collections import defaultdict
 import json, uuid, time, re
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from flask import Flask
+from flask_cors import CORS # 1. Import at the top
+
+app = Flask(__name__)
+
+CORS(app, resources={r"/api/*": {"origins": "https://flexi-order-rouge.vercel.app/"}})
+
 
 # Load environment variables from .env file
 load_dotenv()
