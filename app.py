@@ -8,13 +8,6 @@ from collections import defaultdict
 import json, uuid, time, re
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from flask import Flask
-from flask_cors import CORS # 1. Import at the top
-
-app = Flask(__name__)
-
-CORS(app, resources={r"/api/*": {"origins": "https://flexi-order-rouge.vercel.app/"}})
-
 
 # Load environment variables from .env file
 load_dotenv()
@@ -24,8 +17,7 @@ app = Flask(__name__)
 # ─────────────────────────────────────────
 # CONFIG
 # ─────────────────────────────────────────
-# Now pulling directly from the environment (or .env file)
-# Secure Configuration
+# Pulled directly from the environment (or .env file)
 API_KEY = os.environ.get("API_SECRET_KEY")
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
@@ -33,9 +25,11 @@ if not API_KEY:
     raise ValueError("CRITICAL ERROR: API_SECRET_KEY not set in environment.")
 if not DATABASE_URL:
     raise ValueError("CRITICAL ERROR: DATABASE_URL not set in environment.")
-# CORS
+
+# CORS — single source of truth (previously registered twice, which is
+# unnecessary and confusing; keep only this one).
 CORS(app, resources={r"/api/*": {
-    "origins": "*",
+    "origins": "https://flexi-order-rouge.vercel.app",
     "allow_headers": ["Content-Type", "X-API-Key"],
     "methods": ["GET", "POST", "PATCH", "DELETE", "OPTIONS"]
 }})
@@ -138,6 +132,15 @@ def sanitise(text, max_len=200):
 # ─────────────────────────────────────────
 # API ROUTES (Simplified for brevity, same logic as before)
 # ─────────────────────────────────────────
+@app.route("/")
+def index():
+    return {
+        "status": "online",
+        "service": "FlexiOrder API",
+        "version": "1.0.0",
+        "documentation": "https://flexiorder-api.onrender.com/api/docs"
+    }
+
 @app.route("/api/ping")
 def ping(): return jsonify({"status": "ok", "service": "FlexiOrder API"})
 
@@ -173,16 +176,17 @@ def get_tables():
 
 # (All your other POST/PATCH/DELETE routes go here as before...)
 
+# ─────────────────────────────────────────
+# DATABASE INITIALIZATION
+# ─────────────────────────────────────────
+# IMPORTANT: this must run at IMPORT time, not just under `python app.py`.
+# In production, gunicorn imports this module directly (`gunicorn app:app`),
+# so `__name__` is never "__main__" and anything inside that guard is
+# skipped. init_db() has to run unconditionally here so the tables exist
+# whether the app is started locally or via gunicorn on Render/Railway.
+init_db()
+
 if __name__ == "__main__":
-    init_db()
-    # This says: Use the PORT provided by the environment, or default to 5000 for local testing
+    # Local development only — gunicorn (production) never hits this block.
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-@app.route("/")
-def index():
-    return {
-        "status": "online",
-        "service": "FlexiOrder API",
-        "version": "1.0.0",
-        "documentation": "https://flexiorder-api.onrender.com/api/docs" 
-    }
