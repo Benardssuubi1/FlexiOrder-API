@@ -173,6 +173,11 @@ def get_tables():
     rows = cur.fetchall()
     cur.close(); conn.close()
     return jsonify([dict(r) for r in rows])
+@app.route('/settings', methods=['POST'])
+def update_settings():
+    data = request.json
+    # Logic to save settings to your database
+    return {"status": "Settings Updated"}, 200
 
 # (All your other POST/PATCH/DELETE routes go here as before...)
 
